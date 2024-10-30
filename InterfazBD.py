@@ -14,6 +14,12 @@ def conectar_db():
         host='localhost',  # Cambia si tu servidor es diferente
     )
     return conn
+
+#Funcion para limpiar los campos
+def limpiar_campos():
+    for widget in w.winfo_children():
+        if isinstance(widget, Entry):
+            widget.delete(0, 'end')
 #---------------------------------------EMPLEADOS--------------------------------------------------
 def mostrar_empleados():
     conn = conectar_db()
@@ -76,7 +82,7 @@ def añadir_empleado(tabla_empleados):
     w_agregar = Toplevel()
     w_agregar.title("Añadir Empleado")
     w_agregar.geometry("300x500")
-    w_agregar.configure("#133E87")
+    #w_agregar.configure(bg="#133E87")
     icono = PhotoImage(file="server-storage.png")
     w_agregar.iconphoto(True, icono)
 
@@ -218,7 +224,7 @@ def añadir_doctor(tabla_doctores):
     w_agregar = Toplevel()
     w_agregar.title("Añadir Doctor")
     w_agregar.geometry("300x400")
-    w_agregar.configure(bg="#133E87")
+    #w_agregar.configure(bg="#133E87")
     icono = PhotoImage(file="server-storage.png")
     w_agregar.iconphoto(True, icono)
 
@@ -336,6 +342,7 @@ def ventana_principal():
 
 def cerrar_ventanas(window):
     window.destroy()  # Cierra la ventana secundaria
+    limpiar_campos()
     w.deiconify()  # Muestra la ventana principal de nuevo
 
 def login():
