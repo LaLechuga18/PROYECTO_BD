@@ -2,6 +2,7 @@ from tkinter import *
 from tkinter import ttk, messagebox
 from PIL import Image, ImageTk  # LIBRERIA PARA IMPORTAR IMAGENES (pip install pillow)
 import psycopg2  # Para la conexión a PostgreSQL
+from psycopg2 import sql
 
 
 #--------------------------------------BASE DE DATOS-----------------------------------------------
@@ -193,11 +194,11 @@ def mostrar_doctores():
         tabla_doctores.insert("", "end", values=doctor)
 
     # Botón para añadir empleado
-    añadir_btn = Button(w_doctores, text="Añadir Doctor", command=lambda: añadir_doctor(tabla_doctores), bg="#00FF9C")
+    añadir_btn = Button(w_doctores, text="Añadir Doctor", command=lambda: añadir_paciente(tabla_doctores), bg="#00FF9C")
     añadir_btn.pack(pady=5)
 
     # Función para eliminar el doctor seleccionado
-    def eliminar_dcotor():
+    def eliminar_doctor():
         selected_item = tabla_doctores.selection()
         if selected_item:
             empleado_id = tabla_doctores.item(selected_item)['values'][0]  # Asumiendo que la primera columna es 'codigo'
@@ -214,7 +215,7 @@ def mostrar_doctores():
             tabla_doctores.delete(selected_item)  # Elimina el registro visualmente
 
     # Botón para eliminar empleado
-    eliminar_btn = Button(w_doctores, text="Eliminar Doctor", command=eliminar_dcotor, bg="#F9E400")
+    eliminar_btn = Button(w_doctores, text="Eliminar Doctor", command=eliminar_doctor, bg="#F9E400")
     eliminar_btn.pack(pady=5)
 
     Button(w_doctores, text="Cerrar", command=w_doctores.destroy, bg="#FF004D").pack(pady=5)
@@ -299,6 +300,145 @@ def añadir_doctor(tabla_doctores):
     Button(w_agregar, text="Cerrar", command=w_agregar.destroy, background="#FF004D").pack(pady=5)
 
 
+#-----------------------------------PACIENTES---------------------------------------------------------
+
+def mostrar_pacientes():
+    conn = conectar_db()
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM paciente")
+    pacientes = cursor.fetchall()
+    column_names = [desc[0] for desc in cursor.description]
+    cursor.close()
+    conn.close()
+
+    # Crear una nueva ventana para mostrar los doctores
+    w_pacientes = Toplevel()
+    w_pacientes.title("Pacientes")
+    w_pacientes.configure(bg="#433878")
+    Label(w_pacientes, text="Tabla de Pacientes", bg="#433878", fg="White").pack(pady=10)
+    icono = PhotoImage(file="server-storage.png")
+    w_pacientes.iconphoto(True, icono)
+
+    # Crear un Treeview para mostrar los datos
+    tabla_pacientes = ttk.Treeview(w_pacientes, columns=column_names, show="headings")
+    tabla_pacientes.pack(expand=True, fill='both')
+
+    # Configurar las columnas dinámicamente
+    for col in column_names:
+        tabla_pacientes.heading(col, text=col)
+        tabla_pacientes.column(col, anchor='center', width=100)
+
+    # Insertar los datos en el Treeview
+    for paciente in pacientes:
+        tabla_pacientes.insert("", "end", values=paciente)
+
+    # Botón para añadir empleado
+    añadir_btn = Button(w_pacientes, text="Añadir Paciente", command=lambda: añadir_paciente(tabla_pacientes), bg="#00FF9C")
+    añadir_btn.pack(pady=5)
+
+    # Función para eliminar el doctor seleccionado
+    def eliminar_paciente():
+        selected_item1 = tabla_pacientes.selection()
+        if selected_item1:
+            empleado_id1 = tabla_pacientes.item(selected_item1)['values'][0]
+
+            # Eliminar el paciente de la base de datos
+            conn = conectar_db()
+            cursor = conn.cursor()
+            cursor.execute("DELETE FROM paciente WHERE codigo = %s", (empleado_id1,))
+            conn.commit()
+            cursor.close()
+            conn.close()
+
+            # Actualizar la tabla después de la eliminación
+            tabla_pacientes.delete(selected_item1)  # Elimina el registro visualmente
+
+    # Botón para eliminar empleado
+    eliminar_btn = Button(w_pacientes, text="Eliminar Paciente", command=eliminar_paciente, bg="#F9E400")
+    eliminar_btn.pack(pady=5)
+
+    Button(w_pacientes, text="Cerrar", command=w_pacientes.destroy, bg="#FF004D").pack(pady=5)
+
+def añadir_paciente(tabla_pacientes):
+    # Crear nueva ventana para agregar doctor
+    w_agregar = Toplevel()
+    w_agregar.title("Añadir Doctor")
+    w_agregar.geometry("300x400")
+    #w_agregar.configure(bg="#133E87")
+    icono = PhotoImage(file="server-storage.png")
+    w_agregar.iconphoto(True, icono)
+
+    # Campos para ingresar datos
+    ttk.Label(w_agregar, text="Codigo").pack()
+    entry_codigo = ttk.Entry(w_agregar)
+    entry_codigo.pack()
+
+    ttk.Label(w_agregar, text="Nombre").pack()
+    entry_nombre = ttk.Entry(w_agregar)
+    entry_nombre.pack()
+
+    ttk.Label(w_agregar, text="Direccion").pack()
+    entry_direccion = ttk.Entry(w_agregar)
+    entry_direccion.pack()
+
+    ttk.Label(w_agregar, text="Telefono").pack()
+    entry_telefono = ttk.Entry(w_agregar)
+    entry_telefono.pack()
+
+    ttk.Label(w_agregar, text="Fecha Nacimiento").pack()
+    entry_fechanac = ttk.Entry(w_agregar)
+    entry_fechanac.pack()
+
+    ttk.Label(w_agregar, text="Sexo").pack()
+    entry_sexo = ttk.Entry(w_agregar)
+    entry_sexo.pack()
+
+    ttk.Label(w_agregar, text="Edad").pack()
+    entry_edad = ttk.Entry(w_agregar)
+    entry_edad.pack()
+
+    ttk.Label(w_agregar, text="Estatura").pack()
+    entry_estatura = ttk.Entry(w_agregar)
+    entry_estatura.pack()
+
+    def guardar_paciente():
+        codigo = entry_codigo.get()
+        nombre = entry_nombre.get()
+        direccion = entry_direccion.get()
+        telefono = entry_telefono.get()
+        fecha_nac = entry_fechanac.get()
+        sexo = entry_sexo.get()
+        edad = entry_edad.get()
+        estatura = entry_estatura.get()
+
+        # Insertar el nuevo empleado en la base de datos
+        conn = conectar_db()
+        cursor = conn.cursor()
+        cursor.execute(
+            "INSERT INTO paciente (codigo, nombre, direccion, telefono, fecha_nac, sexo, edad, estatura) VALUES (%s, %s, %s, %s, %s, %s, %s, %s)",
+            (codigo, nombre, direccion, telefono, fecha_nac, sexo, edad, estatura))
+        conn.commit()
+
+        # Obtener el último registro añadido para mostrarlo en el Treeview
+        cursor.execute("SELECT * FROM paciente WHERE codigo = %s", (codigo,))
+        nuevo_empleado = cursor.fetchone()
+
+        # Insertar el nuevo registro en el Treeview
+        if nuevo_empleado:
+            tabla_pacientes.insert("", "end", values=nuevo_empleado)
+
+        cursor.close()
+        conn.close()
+
+        w_agregar.destroy()  # Cerrar la ventana de añadir empleado
+
+    # Botón para guardar doctor
+    btn_guardar = Button(w_agregar, text="Guardar", command=guardar_paciente, bg="#008DDA")
+    btn_guardar.pack(pady=10)
+
+    Button(w_agregar, text="Cerrar", command=w_agregar.destroy, background="#FF004D").pack(pady=5)
+
+
 def ventana_principal():
     w.withdraw()
     w2 = Toplevel()  # Toplevel para crear una nueva ventana
@@ -316,10 +456,10 @@ def ventana_principal():
     btn_empleados = Button(frame_botones, text="Empleados", command=mostrar_empleados,background="#0E2954", fg="White")
     btn_empleados.pack(side="left", expand=True, fill="x")
 
-    btn_doctores = Button(frame_botones, text="Doctores", command=mostrar_doctores,background="#1F6E8C", fg="White")
+    btn_doctores = Button(frame_botones, text="Doctores", command=mostrar_doctores, background="#1F6E8C", fg="White")
     btn_doctores.pack(side="left", expand=True, fill="x")
 
-    btn_pacientes = Button(frame_botones, text="Pacientes", background="#2E8A99", fg="White")
+    btn_pacientes = Button(frame_botones, text="Pacientes",command=mostrar_pacientes ,background="#2E8A99", fg="White")
     btn_pacientes.pack(side="left", expand=True, fill="x")
 
     btn_citas = Button(frame_botones, text="Citas",background="#84A7A1", fg="White")
@@ -346,12 +486,74 @@ def cerrar_ventanas(window):
     w.deiconify()  # Muestra la ventana principal de nuevo
 
 def login():
+    user = usuario.get()  # Obtiene el nombre de usuario ingresado
+    password = contra.get()     # Obtiene la contraseña ingresada
+
+    # Verificar si es administrador
+    if user == 'admin' and password == '1234':
+        ventana_principal()  # Abre la ventana principal para el administrador
+        return
+
+    # Conectar a la base de datos y verificar las credenciales
+    conexion = conectar_db()
+    if conexion is None:
+        return
+
+    try:
+        cursor = conexion.cursor()
+        query = sql.SQL("SELECT nombre FROM empleado WHERE nombre = %s AND contraseña = %s")
+        cursor.execute(query, (user, password))
+        resultado = cursor.fetchone()
+
+
+        if resultado:
+            ventana_empleados()  # Abre la ventana de empleados
+        else:
+            messagebox.showerror("Error", "Usuario o contraseña inválido...")
+
+        cursor.close()
+    except Exception as e:
+        messagebox.showerror("Error de consulta", f"Ocurrió un error al verificar las credenciales: {e}")
+    finally:
+        conexion.close()
+
+
+
+def ventana_empleados():
     user = usuario.get()
-    contraseña = contra.get()
-    if user == 'admin' and contraseña == '1234': #VALIDACION DE CADENAS
-        ventana_principal()
-    else:
-        messagebox.showerror("Error","Usuario o contraseña invalido...")
+    w.withdraw()
+    w2 = Toplevel()  # Toplevel para crear una nueva ventana
+    w2.geometry("500x400")
+    w2.title("Empleados")
+    icono = PhotoImage(file="server-storage.png")
+    w2.iconphoto(True, icono)
+    w2.configure(background="#433878")
+
+    Label(w2, text=f"Hola {user}!", bg="#433878", font=("Arial", 12),fg="White", anchor='w').pack(fill='x')
+
+    # Frame superior para los botones
+    frame_botones = Frame(w2)
+    frame_botones.pack(side="top", fill="x")  # Llenar horizontalmente
+
+    # Crear botones
+    btn_empleados = Button(frame_botones, text="Dar de alta", command=mostrar_pacientes, background="#6196A6", fg="White")
+    btn_empleados.pack(side="left", expand=True, fill="x")
+
+    # Poner la imagen usando pillow
+    image = Image.open("staff.png")  # Aquí va la ruta de tu imagen
+    image = image.resize((200, 200), Image.LANCZOS)  # Cambiar el tamaño de la imagen
+    image_tk = ImageTk.PhotoImage(image)
+
+    # Crear etiqueta para la imagen y centrarla
+    label_imagen = Label(w2, image=image_tk, background="#433878")
+    label_imagen.pack(pady=20)  # Espacio superior para la imagen
+
+    label_imagen.image = image_tk  # Para no borrar la imagen de la memoria
+
+    # Botón de cerrar fuera del frame de botones
+    btn_cerrar = Button(w2, text="Cerrar", command=lambda: cerrar_ventanas(w2), background="#FF004D")
+    btn_cerrar.pack(pady=10)  # Espacio superior para el botón
+
 
 
 # ------------------------VENTANA PRINCIPAL-----------------------------
