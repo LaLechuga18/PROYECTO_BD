@@ -3,7 +3,7 @@ from tkinter import ttk, messagebox
 from PIL import Image, ImageTk  # LIBRERIA PARA IMPORTAR IMAGENES (pip install pillow)
 import psycopg2  # Para la conexión a PostgreSQL
 from psycopg2 import sql
-from tkcalendar import Calendar
+from tkcalendar import Calendar #Descargar tkcalendar
 
 
 #--------------------------------------BASE DE DATOS-----------------------------------------------
@@ -511,6 +511,7 @@ def mostrar_citas():
     # Agregar botón para añadir una nueva cita
     añadir_btn = Button(w_citas, text="Añadir Cita", command=lambda: añadir_citas(tabla_citas), bg="#00FF9C")
     añadir_btn.pack(pady=5)
+    limpiar_campos()
 
     # Función para eliminar la cita seleccionada
     def eliminar_citas():
@@ -658,15 +659,18 @@ def login():
 
     try:
         cursor = conexion.cursor()
-        query = sql.SQL("SELECT nombre FROM empleado WHERE nombre = %s AND contraseña = %s")
+        # Consulta para verificar el código y contraseña y obtener el nombre del empleado
+        query = "SELECT nombre FROM empleado WHERE codigo = %s AND contraseña = %s"
         cursor.execute(query, (user, password))
         resultado = cursor.fetchone()
 
-
         if resultado:
-            ventana_empleados()  # Abre la ventana de empleados
+            nombre_empleado = resultado[0]  # Recupera el nombre del empleado
+            mensaje_bienvenida = f"Hola, {nombre_empleado.capitalize()}"
+            messagebox.showinfo("Inicio de sesión exitoso", mensaje_bienvenida)
+            ventana_empleados(nombre_empleado)  # Pasa el nombre a la ventana de empleados
         else:
-            messagebox.showerror("Error", "Usuario o contraseña inválido...")
+            messagebox.showerror("Error", "Código o contraseña inválidos...")
 
         cursor.close()
     except Exception as e:
@@ -676,7 +680,7 @@ def login():
 
 
 
-def ventana_empleados():
+def ventana_empleados(nombre_empleado):
     user = usuario.get()
     w.withdraw()
     w2 = Toplevel()  # Toplevel para crear una nueva ventana
@@ -686,7 +690,7 @@ def ventana_empleados():
     w2.iconphoto(True, icono)
     w2.configure(background="#433878")
 
-    Label(w2, text=f"Hola {user}!", bg="#433878", font=("Arial", 12),fg="White", anchor='w').pack(fill='x')
+    Label(w2, text=f"Hola {nombre_empleado}!", bg="#433878", font=("Arial", 12),fg="White", anchor='w').pack(fill='x')
 
     # Frame superior para los botones
     frame_botones = Frame(w2)
