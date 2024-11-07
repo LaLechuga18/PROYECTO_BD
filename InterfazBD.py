@@ -3,6 +3,7 @@ from tkinter import ttk, messagebox
 from PIL import Image, ImageTk  # LIBRERIA PARA IMPORTAR IMAGENES (pip install pillow)
 import psycopg2  # Para la conexión a PostgreSQL
 from psycopg2 import sql
+from tkcalendar import Calendar
 
 
 #--------------------------------------BASE DE DATOS-----------------------------------------------
@@ -194,7 +195,7 @@ def mostrar_doctores():
         tabla_doctores.insert("", "end", values=doctor)
 
     # Botón para añadir empleado
-    añadir_btn = Button(w_doctores, text="Añadir Doctor", command=lambda: añadir_paciente(tabla_doctores), bg="#00FF9C")
+    añadir_btn = Button(w_doctores, text="Añadir Doctor", command=lambda: añadir_citas(tabla_doctores), bg="#00FF9C")
     añadir_btn.pack(pady=5)
 
     # Función para eliminar el doctor seleccionado
@@ -333,7 +334,7 @@ def mostrar_pacientes():
         tabla_pacientes.insert("", "end", values=paciente)
 
     # Botón para añadir empleado
-    añadir_btn = Button(w_pacientes, text="Añadir Paciente", command=lambda: añadir_paciente(tabla_pacientes), bg="#00FF9C")
+    añadir_btn = Button(w_pacientes, text="Añadir Paciente", command=lambda: añadir_citas(tabla_pacientes), bg="#00FF9C")
     añadir_btn.pack(pady=5)
 
     # Función para eliminar el doctor seleccionado
@@ -362,7 +363,7 @@ def mostrar_pacientes():
 def añadir_paciente(tabla_pacientes):
     # Crear nueva ventana para agregar doctor
     w_agregar = Toplevel()
-    w_agregar.title("Añadir Doctor")
+    w_agregar.title("Añadir Paciente")
     w_agregar.geometry("300x400")
     #w_agregar.configure(bg="#133E87")
     icono = PhotoImage(file="server-storage.png")
@@ -438,6 +439,162 @@ def añadir_paciente(tabla_pacientes):
 
     Button(w_agregar, text="Cerrar", command=w_agregar.destroy, background="#FF004D").pack(pady=5)
 
+#-------------------------------------CITAS--------------------------------------------------
+
+def mostrar_citas():
+    conn = conectar_db()
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM cita")
+    citas = cursor.fetchall()
+    column_names = [desc[0] for desc in cursor.description]
+    cursor.close()
+    conn.close()
+
+    # Crear una nueva ventana para mostrar los doctores y el calendario
+    w_citas = Toplevel()
+    w_citas.title("Citas")
+    w_citas.configure(bg="#433878")
+    Label(w_citas, text="Tabla de Citas", bg="#433878", fg="White").pack(pady=10)
+    icono = PhotoImage(file="server-storage.png")
+    w_citas.iconphoto(True, icono)
+
+    # Crear un Treeview para mostrar los datos
+    tabla_citas = ttk.Treeview(w_citas, columns=column_names, show="headings")
+    tabla_citas.pack(expand=True, fill='both')
+
+    # Configurar las columnas dinámicamente
+    for col in column_names:
+        tabla_citas.heading(col, text=col)
+        tabla_citas.column(col, anchor='center', width=100)
+
+    # Insertar los datos en el Treeview
+    for cita in citas:
+        tabla_citas.insert("", "end", values=cita)
+
+    # Crear un widget de calendario
+    calendar_frame = Frame(w_citas)
+    calendar_frame.pack(pady=20)
+
+     #AQUI SE PERSONALIZA EL CALENDARIO
+    cal = Calendar(calendar_frame,
+                   selectmode="day",
+                   year=2024, month=11,
+                   showweeknumbers=False,  # Oculta los números de semana
+                   locale="es",  # Cambia el idioma a español
+                   date_pattern="dd/mm/yyyy",  # Formato de fecha en español
+                   background="#B1D690",
+                   foreground="black",
+                   selectbackground="blue",
+                   selectforeground="white",
+                   weekendbackground="lightgrey",
+                   weekendforeground="white",
+                   othermonthforeground="grey",
+                   othermonthbackground="white",
+                   bordercolor="grey",
+                   normalbackground="white",
+                   normalforeground="black",
+                   font=("Arial", 12),
+                   headerfont=("Arial", 14, "bold"),
+                   headersbackground="#88C273",
+                   headersforeground="black")
+    cal.pack()
+
+    # Definir el color de los eventos de citas
+    cal.tag_config("cita", background="#008DDA", foreground="black")
+
+
+    # Resaltar las fechas de citas en el calendario
+    for cita in citas:
+        fecha = cita[3]  # Suponiendo que la fecha está en la cuarta columna
+        cal.calevent_create(fecha, "Cita", "cita")
+
+    # Agregar botón para añadir una nueva cita
+    añadir_btn = Button(w_citas, text="Añadir Cita", command=lambda: añadir_citas(tabla_citas), bg="#00FF9C")
+    añadir_btn.pack(pady=5)
+
+    # Función para eliminar la cita seleccionada
+    def eliminar_citas():
+        selected_item = tabla_citas.selection()
+        if selected_item:
+            cita_id = tabla_citas.item(selected_item)['values'][0]
+
+            conn = conectar_db()
+            cursor = conn.cursor()
+            cursor.execute("DELETE FROM cita WHERE id_cita = %s", (cita_id,))
+            conn.commit()
+            cursor.close()
+            conn.close()
+
+            # Actualizar la tabla y el calendario
+            tabla_citas.delete(selected_item)
+
+    eliminar_btn = Button(w_citas, text="Eliminar Cita", command=eliminar_citas, bg="#F9E400")
+    eliminar_btn.pack(pady=5)
+
+    Button(w_citas, text="Cerrar", command=w_citas.destroy, bg="#FF004D").pack(pady=5)
+def añadir_citas(tabla_citas):
+    # Crear nueva ventana para agregar doctor
+    w_agregar = Toplevel()
+    w_agregar.title("Añadir Cita")
+    w_agregar.geometry("300x350")
+    #w_agregar.configure(bg="#133E87")
+    icono = PhotoImage(file="server-storage.png")
+    w_agregar.iconphoto(True, icono)
+
+    # Campos para ingresar datos
+    ttk.Label(w_agregar, text="ID de Cita").pack()
+    entry_id_cita = ttk.Entry(w_agregar)
+    entry_id_cita.pack()
+
+    ttk.Label(w_agregar, text="Codigo del Paciente").pack()
+    entry_codigo_paciente = ttk.Entry(w_agregar)
+    entry_codigo_paciente.pack()
+
+    ttk.Label(w_agregar, text="Codigo del Doctor").pack()
+    entry_id_doctor = ttk.Entry(w_agregar)
+    entry_id_doctor.pack()
+
+    ttk.Label(w_agregar, text="Fecha").pack()
+    entry_fecha = ttk.Entry(w_agregar)
+    entry_fecha.pack()
+
+    ttk.Label(w_agregar, text="Hora").pack()
+    entry_hora = ttk.Entry(w_agregar)
+    entry_hora.pack()
+
+    def guardar_cita():
+        codigo_cita = entry_id_cita.get()
+        codigo_paciente = entry_codigo_paciente.get()
+        id_doctor = entry_id_doctor.get()
+        fecha = entry_fecha.get()
+        hora = entry_hora.get()
+
+        # Insertar el nuevo empleado en la base de datos
+        conn = conectar_db()
+        cursor = conn.cursor()
+        cursor.execute(
+            "INSERT INTO cita (id_cita, codigo_paciente, codigo_doctor, fecha, hora) VALUES (%s, %s, %s, %s, %s)",
+            (codigo_cita, codigo_paciente, id_doctor, fecha, hora))
+        conn.commit()
+
+        # Obtener el último registro añadido para mostrarlo en el Treeview
+        cursor.execute("SELECT * FROM cita WHERE id_cita = %s", (codigo_cita,))
+        nuevo_cita = cursor.fetchone()
+
+        # Insertar el nuevo registro en el Treeview
+        if nuevo_cita:
+            tabla_citas.insert("", "end", values=nuevo_cita)
+
+        cursor.close()
+        conn.close()
+
+        w_agregar.destroy()  # Cerrar la ventana de añadir empleado
+
+    # Botón para guardar cita
+    btn_guardar = Button(w_agregar, text="Guardar", command=guardar_cita, bg="#008DDA")
+    btn_guardar.pack(pady=10)
+
+    Button(w_agregar, text="Cerrar", command=w_agregar.destroy, background="#FF004D").pack(pady=5)
 
 def ventana_principal():
     w.withdraw()
@@ -459,10 +616,10 @@ def ventana_principal():
     btn_doctores = Button(frame_botones, text="Doctores", command=mostrar_doctores, background="#1F6E8C", fg="White")
     btn_doctores.pack(side="left", expand=True, fill="x")
 
-    btn_pacientes = Button(frame_botones, text="Pacientes",command=mostrar_pacientes ,background="#2E8A99", fg="White")
+    btn_pacientes = Button(frame_botones, text="Pacientes", command=mostrar_pacientes, background="#2E8A99", fg="White")
     btn_pacientes.pack(side="left", expand=True, fill="x")
 
-    btn_citas = Button(frame_botones, text="Citas",background="#84A7A1", fg="White")
+    btn_citas = Button(frame_botones, text="Citas",command=mostrar_citas, background="#84A7A1", fg="White")
     btn_citas.pack(side="left", expand=True, fill="x")
 
     # Poner la imagen usando pillow
@@ -536,8 +693,11 @@ def ventana_empleados():
     frame_botones.pack(side="top", fill="x")  # Llenar horizontalmente
 
     # Crear botones
-    btn_empleados = Button(frame_botones, text="Dar de alta", command=mostrar_pacientes, background="#6196A6", fg="White")
-    btn_empleados.pack(side="left", expand=True, fill="x")
+    btn_pacientes1 = Button(frame_botones, text="Dar de alta", command=mostrar_pacientes, background="#6196A6", fg="White")
+    btn_pacientes1.pack(side="left", expand=True, fill="x")
+
+    btn_pacientes1 = Button(frame_botones, text="Registrar Cita", command=mostrar_citas ,background="#133E87", fg="White")
+    btn_pacientes1.pack(side="left", expand=True, fill="x")
 
     # Poner la imagen usando pillow
     image = Image.open("staff.png")  # Aquí va la ruta de tu imagen
@@ -574,7 +734,7 @@ label_imagen.pack(pady=20)  # Espacio superior para la imagen
 
 label_imagen.image = image_tk  # Para no borrar la imagen de la memoria
 
-# ---------------CAMPOS----------------
+# ----------------------------CAMPOS---------------------------------------------
 t1 = Label(w, text="USUARIO", background="#133E87", fg="White")
 t1.pack(pady=5)
 usuario = ttk.Entry(w)
@@ -585,7 +745,7 @@ t2.pack(pady=5)
 contra = ttk.Entry(w, show="*")
 contra.pack()
 
-# ----------------BOTONES-----------------
+# --------------------------------BOTONES------------------------------------
 btn_aceptar = Button(w, text="Aceptar", command=login, bg="#00FF9C")
 btn_aceptar.pack(pady=10)
 
