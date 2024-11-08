@@ -61,7 +61,7 @@ def mostrar_empleados():
     def eliminar_empleado():
         selected_item = tabla_empleados.selection()
         if selected_item:
-            empleado_id = tabla_empleados.item(selected_item)['values'][0]  # Asumiendo que la primera columna es 'codigo'
+            empleado_id = tabla_empleados.item(selected_item)['values'][0]  #  la primera columna es 'codigo'
 
             # Eliminar el empleado de la base de datos
             conn = conectar_db()
@@ -563,19 +563,36 @@ def añadir_citas(tabla_citas):
     entry_hora = ttk.Entry(w_agregar)
     entry_hora.pack()
 
-    def guardar_cita():
+    def guardar_cita(tabla_citas):
         codigo_cita = entry_id_cita.get()
         codigo_paciente = entry_codigo_paciente.get()
         id_doctor = entry_id_doctor.get()
         fecha = entry_fecha.get()
         hora = entry_hora.get()
 
-        # Insertar el nuevo empleado en la base de datos
+        # Verificar si la fecha y hora están disponibles para el doctor
         conn = conectar_db()
         cursor = conn.cursor()
+
+        # Consulta para verificar si el doctor ya tiene una cita a la misma hora
+        cursor.execute(
+            "SELECT * FROM cita WHERE codigo_doctor = %s AND fecha = %s AND hora = %s",
+            (id_doctor, fecha, hora)
+        )
+        cita_existente = cursor.fetchone()
+
+        if cita_existente:
+            # Si ya existe una cita para el doctor en esa fecha y hora
+            messagebox.showerror("Error", "El doctor ya tiene una cita en esa fecha y hora.")
+            cursor.close()
+            conn.close()
+            return  # Salir de la función si hay conflicto
+
+        # Si no existe conflicto, se puede insertar la nueva cita
         cursor.execute(
             "INSERT INTO cita (id_cita, codigo_paciente, codigo_doctor, fecha, hora) VALUES (%s, %s, %s, %s, %s)",
-            (codigo_cita, codigo_paciente, id_doctor, fecha, hora))
+            (codigo_cita, codigo_paciente, id_doctor, fecha, hora)
+        )
         conn.commit()
 
         # Obtener el último registro añadido para mostrarlo en el Treeview
@@ -588,11 +605,10 @@ def añadir_citas(tabla_citas):
 
         cursor.close()
         conn.close()
-
-        w_agregar.destroy()  # Cerrar la ventana de añadir empleado
+        w_agregar.destroy()  # Cerrar la ventana de añadir cita
 
     # Botón para guardar cita
-    btn_guardar = Button(w_agregar, text="Guardar", command=guardar_cita, bg="#008DDA")
+    btn_guardar = Button(w_agregar, text="Guardar", command=lambda: guardar_cita(tabla_citas), bg="#008DDA")
     btn_guardar.pack(pady=10)
 
     Button(w_agregar, text="Cerrar", command=w_agregar.destroy, background="#FF004D").pack(pady=5)
