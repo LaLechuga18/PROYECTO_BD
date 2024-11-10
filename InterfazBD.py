@@ -5,7 +5,6 @@ import psycopg2  # Para la conexión a PostgreSQL
 from psycopg2 import sql
 from tkcalendar import Calendar #Descargar tkcalendar
 
-
 #--------------------------------------BASE DE DATOS-----------------------------------------------
 def conectar_db():
     # Conectar a la base de datos PostgreSQL
@@ -502,6 +501,20 @@ def mostrar_citas():
     # Definir el color de los eventos de citas
     cal.tag_config("cita", background="#008DDA", foreground="black")
 
+    def modificar_datos():
+        selected_item = tabla_citas.selection()
+        if selected_item:
+            # Obtener los datos de la fila seleccionada
+            datos = tabla_citas.item(selected_item)['values']
+            id_empleado = datos[0]  # Suponiendo que el ID está en la primera columna
+
+            # Crear una ventana para modificar los datos
+            modificar_citas(id_empleado, datos, tabla_citas)
+
+    # Crear un botón "Modificar"
+    btn_modificar = Button(w_citas, text="Modificar Cita", command=modificar_datos, bg="#008DDA")
+    btn_modificar.pack(pady=5)
+
 
     # Resaltar las fechas de citas en el calendario
     for cita in citas:
@@ -533,6 +546,80 @@ def mostrar_citas():
     eliminar_btn.pack(pady=5)
 
     Button(w_citas, text="Cerrar", command=w_citas.destroy, bg="#FF004D").pack(pady=5)
+
+
+def modificar_citas(id_cita, datos_actuales, tabla_citas):
+    # Ventana para modificar los datos
+    w_modificar = Toplevel()
+    w_modificar.geometry("300x350")
+    w_modificar.title("Modificar Cita")
+    limpiar_campos()
+
+    # Campos de entrada para modificar
+    ttk.Label(w_modificar, text="ID Doctor").pack()
+    entry_docn = ttk.Entry(w_modificar)
+    entry_docn.pack()
+    entry_docn.insert(0, datos_actuales[1])  # Asumiendo que el ID es la primera columna
+
+    ttk.Label(w_modificar, text="ID Paciente").pack()
+    entry_pacienten = ttk.Entry(w_modificar)
+    entry_pacienten.pack()
+    entry_pacienten.insert(0, datos_actuales[2])  # Asumiendo que el nombre está en la segunda columna
+
+    ttk.Label(w_modificar, text="Fecha").pack()
+    entry_fechan = ttk.Entry(w_modificar)
+    entry_fechan.pack()
+    entry_fechan.insert(0, datos_actuales[3])  # Asumiendo que la fecha está en la tercera columna
+
+    ttk.Label(w_modificar, text="Hora").pack()
+    entry_horan = ttk.Entry(w_modificar)
+    entry_horan.pack()
+    entry_horan.insert(0, datos_actuales[4])  # Usar el valor correcto de la hora
+
+    # Función para guardar los cambios en la base de datos
+    def guardar_cambios():
+        nuevo_doc = entry_docn.get()
+        nuevo_pac = entry_pacienten.get()
+        nuevo_fecha = entry_fechan.get()
+        nuevo_hora = entry_horan.get()
+
+        # Verificar si todos los campos tienen valores
+        if not nuevo_doc or not nuevo_pac or not nuevo_fecha or not nuevo_hora:
+            messagebox.showerror("Error", "Todos los campos deben ser llenados")
+            return
+
+        try:
+            conn = conectar_db()
+            cursor = conn.cursor()
+            cursor.execute("""
+                UPDATE cita
+                SET codigo_doctor = %s, codigo_paciente = %s, fecha = %s, hora = %s
+                WHERE id_cita = %s
+            """, (nuevo_doc, nuevo_pac, nuevo_fecha, nuevo_hora, id_cita))  # Pasar valores a la consulta
+            conn.commit()
+
+            # Actualizar la tabla en la interfaz
+            for item in tabla_citas.get_children():
+                if tabla_citas.item(item)["values"][0] == id_cita:  # Buscar la fila correspondiente
+                    tabla_citas.item(item, values=(id_cita, nuevo_doc, nuevo_pac, nuevo_fecha, nuevo_hora))  # Actualizar la fila
+
+            cursor.close()
+            conn.close()
+
+            messagebox.showinfo("Éxito", "Datos actualizados correctamente.")
+            w_modificar.destroy()  # Cerrar la ventana de modificación
+
+        except Exception as e:
+            messagebox.showerror("Error", f"Error al guardar los cambios: {e}")
+
+    btn_guardar = Button(w_modificar, text="Guardar", command=guardar_cambios, bg="#008DDA")
+    btn_guardar.pack(pady=10)
+
+    # Botón para cerrar la ventana de modificación
+    Button(w_modificar, text="Cerrar", command=w_modificar.destroy, bg="#FF004D").pack(pady=5)
+
+
+
 def añadir_citas(tabla_citas):
     # Crear nueva ventana para agregar doctor
     w_agregar = Toplevel()
