@@ -4,6 +4,7 @@ from PIL import Image, ImageTk  # LIBRERIA PARA IMPORTAR IMAGENES (pip install p
 import psycopg2  # Para la conexión a PostgreSQL
 from psycopg2 import sql
 from tkcalendar import Calendar #Descargar tkcalendar
+from tkcalendar import DateEntry
 
 #--------------------------------------BASE DE DATOS-----------------------------------------------
 def conectar_db():
@@ -193,17 +194,17 @@ def mostrar_doctores():
     for doctor in doctores:
         tabla_doctores.insert("", "end", values=doctor)
 
-    # Botón para añadir empleado
-    añadir_btn = Button(w_doctores, text="Añadir Doctor", command=lambda: añadir_citas(tabla_doctores), bg="#00FF9C")
+    # Botón para añadir doctor
+    añadir_btn = Button(w_doctores, text="Añadir Doctor", command=lambda: añadir_doctor(tabla_doctores), bg="#00FF9C")
     añadir_btn.pack(pady=5)
 
     # Función para eliminar el doctor seleccionado
     def eliminar_doctor():
         selected_item = tabla_doctores.selection()
         if selected_item:
-            empleado_id = tabla_doctores.item(selected_item)['values'][0]  # Asumiendo que la primera columna es 'codigo'
+            empleado_id = tabla_doctores.item(selected_item)['values'][0]
 
-            # Eliminar el empleado de la base de datos
+            # Eliminar el doctor de la base de datos
             conn = conectar_db()
             cursor = conn.cursor()
             cursor.execute("DELETE FROM doctor WHERE codigo = %s", (empleado_id,))
@@ -214,7 +215,7 @@ def mostrar_doctores():
             # Actualizar la tabla después de la eliminación
             tabla_doctores.delete(selected_item)  # Elimina el registro visualmente
 
-    # Botón para eliminar empleado
+    # Botón para eliminar doctor
     eliminar_btn = Button(w_doctores, text="Eliminar Doctor", command=eliminar_doctor, bg="#F9E400")
     eliminar_btn.pack(pady=5)
 
@@ -225,7 +226,6 @@ def añadir_doctor(tabla_doctores):
     w_agregar = Toplevel()
     w_agregar.title("Añadir Doctor")
     w_agregar.geometry("300x400")
-    #w_agregar.configure(bg="#133E87")
     icono = PhotoImage(file="server-storage.png")
     w_agregar.iconphoto(True, icono)
 
@@ -272,7 +272,7 @@ def añadir_doctor(tabla_doctores):
         especialidad = entry_especialidad.get()
         contraseña = entry_contra.get()
 
-        # Insertar el nuevo empleado en la base de datos
+        # Insertar el nuevo doctor en la base de datos
         conn = conectar_db()
         cursor = conn.cursor()
         cursor.execute(
@@ -291,7 +291,7 @@ def añadir_doctor(tabla_doctores):
         cursor.close()
         conn.close()
 
-        w_agregar.destroy()  # Cerrar la ventana de añadir empleado
+        w_agregar.destroy()  # Cerrar la ventana de añadir doctor
 
     # Botón para guardar doctor
     btn_guardar = Button(w_agregar, text="Guardar", command=guardar_doctor, bg="#008DDA")
@@ -311,7 +311,7 @@ def mostrar_pacientes():
     cursor.close()
     conn.close()
 
-    # Crear una nueva ventana para mostrar los doctores
+    # Crear una nueva ventana para mostrar los pacientes
     w_pacientes = Toplevel()
     w_pacientes.title("Pacientes")
     w_pacientes.configure(bg="#433878")
@@ -332,11 +332,11 @@ def mostrar_pacientes():
     for paciente in pacientes:
         tabla_pacientes.insert("", "end", values=paciente)
 
-    # Botón para añadir empleado
+    # Botón para añadir paciente
     añadir_btn = Button(w_pacientes, text="Añadir Paciente", command=lambda: añadir_citas(tabla_pacientes), bg="#00FF9C")
     añadir_btn.pack(pady=5)
 
-    # Función para eliminar el doctor seleccionado
+    # Función para eliminar el paciente seleccionado
     def eliminar_paciente():
         selected_item1 = tabla_pacientes.selection()
         if selected_item1:
@@ -353,7 +353,7 @@ def mostrar_pacientes():
             # Actualizar la tabla después de la eliminación
             tabla_pacientes.delete(selected_item1)  # Elimina el registro visualmente
 
-    # Botón para eliminar empleado
+    # Botón para eliminar paciente
     eliminar_btn = Button(w_pacientes, text="Eliminar Paciente", command=eliminar_paciente, bg="#F9E400")
     eliminar_btn.pack(pady=5)
 
@@ -364,7 +364,6 @@ def añadir_paciente(tabla_pacientes):
     w_agregar = Toplevel()
     w_agregar.title("Añadir Paciente")
     w_agregar.geometry("300x400")
-    #w_agregar.configure(bg="#133E87")
     icono = PhotoImage(file="server-storage.png")
     w_agregar.iconphoto(True, icono)
 
@@ -411,7 +410,7 @@ def añadir_paciente(tabla_pacientes):
         edad = entry_edad.get()
         estatura = entry_estatura.get()
 
-        # Insertar el nuevo empleado en la base de datos
+        # Insertar el nuevo paciente en la base de datos
         conn = conectar_db()
         cursor = conn.cursor()
         cursor.execute(
@@ -430,7 +429,7 @@ def añadir_paciente(tabla_pacientes):
         cursor.close()
         conn.close()
 
-        w_agregar.destroy()  # Cerrar la ventana de añadir empleado
+        w_agregar.destroy()  # Cerrar la ventana de añadir paciente
 
     # Botón para guardar doctor
     btn_guardar = Button(w_agregar, text="Guardar", command=guardar_paciente, bg="#008DDA")
@@ -449,7 +448,7 @@ def mostrar_citas():
     cursor.close()
     conn.close()
 
-    # Crear una nueva ventana para mostrar los doctores y el calendario
+    # Crear una nueva ventana para mostrar las citas y el calendario
     w_citas = Toplevel()
     w_citas.title("Citas")
     w_citas.configure(bg="#433878")
@@ -547,148 +546,193 @@ def mostrar_citas():
 
     Button(w_citas, text="Cerrar", command=w_citas.destroy, bg="#FF004D").pack(pady=5)
 
+    def modificar_citas(id_cita, datos_actuales, tabla_citas):
+        # Ventana para modificar los datos
+        w_modificar = Toplevel()
+        w_modificar.geometry("300x400")
+        w_modificar.title("Modificar Cita")
 
-def modificar_citas(id_cita, datos_actuales, tabla_citas):
-    # Ventana para modificar los datos
-    w_modificar = Toplevel()
-    w_modificar.geometry("300x350")
-    w_modificar.title("Modificar Cita")
-    limpiar_campos()
+        # Conectar a la base de datos para obtener los doctores y pacientes disponibles
+        conn = conectar_db()
+        cursor = conn.cursor()
 
-    # Campos de entrada para modificar
-    ttk.Label(w_modificar, text="ID Doctor").pack()
-    entry_docn = ttk.Entry(w_modificar)
-    entry_docn.pack()
-    entry_docn.insert(0, datos_actuales[1])  # Asumiendo que el ID es la primera columna
+        # Obtener lista de pacientes con su código y nombre
+        cursor.execute("SELECT codigo, nombre FROM paciente")
+        pacientes = cursor.fetchall()  # Lista de tuplas (codigo, nombre)
 
-    ttk.Label(w_modificar, text="ID Paciente").pack()
-    entry_pacienten = ttk.Entry(w_modificar)
-    entry_pacienten.pack()
-    entry_pacienten.insert(0, datos_actuales[2])  # Asumiendo que el nombre está en la segunda columna
+        # Obtener lista de doctores con su código y nombre
+        cursor.execute("SELECT codigo, nombre FROM doctor")
+        doctores = cursor.fetchall()  # Lista de tuplas (codigo, nombre)
 
-    ttk.Label(w_modificar, text="Fecha").pack()
-    entry_fechan = ttk.Entry(w_modificar)
-    entry_fechan.pack()
-    entry_fechan.insert(0, datos_actuales[3])  # Asumiendo que la fecha está en la tercera columna
+        cursor.close()
+        conn.close()
 
-    ttk.Label(w_modificar, text="Hora").pack()
-    entry_horan = ttk.Entry(w_modificar)
-    entry_horan.pack()
-    entry_horan.insert(0, datos_actuales[4])  # Usar el valor correcto de la hora
+        # Campos de entrada para modificar
+        # Combobox para seleccionar el doctor, muestra el nombre pero guarda el código
+        ttk.Label(w_modificar, text="Doctor").pack()
+        combo_codigo_doctor = ttk.Combobox(w_modificar, values=[f"{codigo} - {nombre}" for codigo, nombre in doctores])
+        combo_codigo_doctor.pack()
+        # Configurar el valor inicial usando el código actual del doctor
+        combo_codigo_doctor.set(f"{datos_actuales[1]}")
 
-    # Función para guardar los cambios en la base de datos
-    def guardar_cambios():
-        nuevo_doc = entry_docn.get()
-        nuevo_pac = entry_pacienten.get()
-        nuevo_fecha = entry_fechan.get()
-        nuevo_hora = entry_horan.get()
+        # Combobox para seleccionar el paciente, muestra el nombre pero guarda el código
+        ttk.Label(w_modificar, text="Paciente").pack()
+        combo_codigo_paciente = ttk.Combobox(w_modificar,
+                                             values=[f"{codigo} - {nombre}" for codigo, nombre in pacientes])
+        combo_codigo_paciente.pack()
+        # Configurar el valor inicial usando el código actual del paciente
+        combo_codigo_paciente.set(f"{datos_actuales[2]}")
 
-        # Verificar si todos los campos tienen valores
-        if not nuevo_doc or not nuevo_pac or not nuevo_fecha or not nuevo_hora:
-            messagebox.showerror("Error", "Todos los campos deben ser llenados")
-            return
+        # Campo de entrada para la fecha
+        ttk.Label(w_modificar, text="Fecha ").pack()
+        entry_fechan = ttk.Entry(w_modificar)
+        entry_fechan.pack()
+        entry_fechan.insert(0, datos_actuales[3])
 
-        try:
-            conn = conectar_db()
-            cursor = conn.cursor()
-            cursor.execute("""
-                UPDATE cita
-                SET codigo_doctor = %s, codigo_paciente = %s, fecha = %s, hora = %s
-                WHERE id_cita = %s
-            """, (nuevo_doc, nuevo_pac, nuevo_fecha, nuevo_hora, id_cita))  # Pasar valores a la consulta
-            conn.commit()
+        # Campo de entrada para la hora
+        ttk.Label(w_modificar, text="Hora").pack()
+        entry_horan = ttk.Entry(w_modificar)
+        entry_horan.pack()
+        entry_horan.insert(0, datos_actuales[4])
 
-            # Actualizar la tabla en la interfaz
-            for item in tabla_citas.get_children():
-                if tabla_citas.item(item)["values"][0] == id_cita:  # Buscar la fila correspondiente
-                    tabla_citas.item(item, values=(id_cita, nuevo_doc, nuevo_pac, nuevo_fecha, nuevo_hora))  # Actualizar la fila
+        # Función para guardar los cambios en la base de datos
+        def guardar_cambios():
+            # Obtener valores de los Combobox
+            nuevo_doc = combo_codigo_doctor.get().split(" - ")[0]  # Extraer solo el código del doctor
+            nuevo_pac = combo_codigo_paciente.get().split(" - ")[0]  # Extraer solo el código del paciente
+            nuevo_fecha = entry_fechan.get()
+            nuevo_hora = entry_horan.get()
 
-            cursor.close()
-            conn.close()
+            # Verificar si todos los campos tienen valores
+            if not nuevo_doc or not nuevo_pac or not nuevo_fecha or not nuevo_hora:
+                messagebox.showerror("Error", "Todos los campos deben ser llenados")
+                return
 
-            messagebox.showinfo("Éxito", "Datos actualizados correctamente.")
-            w_modificar.destroy()  # Cerrar la ventana de modificación
+            try:
+                conn = conectar_db()
+                cursor = conn.cursor()
+                cursor.execute("""
+                    UPDATE cita
+                    SET codigo_doctor = %s, codigo_paciente = %s, fecha = %s, hora = %s
+                    WHERE id_cita = %s
+                """, (nuevo_doc, nuevo_pac, nuevo_fecha, nuevo_hora, id_cita))  # Pasar valores a la consulta
+                conn.commit()
 
-        except Exception as e:
-            messagebox.showerror("Error", f"Error al guardar los cambios: {e}")
+                # Actualizar la tabla en la interfaz
+                for item in tabla_citas.get_children():
+                    if tabla_citas.item(item)["values"][0] == id_cita:  # Buscar la fila correspondiente
+                        tabla_citas.item(item, values=(
+                        id_cita, nuevo_doc, nuevo_pac, nuevo_fecha, nuevo_hora))  # Actualizar la fila
 
-    btn_guardar = Button(w_modificar, text="Guardar", command=guardar_cambios, bg="#008DDA")
-    btn_guardar.pack(pady=10)
+                cursor.close()
+                conn.close()
 
-    # Botón para cerrar la ventana de modificación
-    Button(w_modificar, text="Cerrar", command=w_modificar.destroy, bg="#FF004D").pack(pady=5)
+                messagebox.showinfo("Éxito", "Datos actualizados correctamente.")
+                w_modificar.destroy()  # Cerrar la ventana de modificación
 
+            except Exception as e:
+                messagebox.showerror("Error", f"Error al guardar los cambios: {e}")
 
+        # Botón para guardar los cambios
+        btn_guardar = Button(w_modificar, text="Guardar", command=guardar_cambios, bg="#008DDA")
+        btn_guardar.pack(pady=10)
+
+        # Botón para cerrar la ventana de modificación
+        Button(w_modificar, text="Cerrar", command=w_modificar.destroy, bg="#FF004D").pack(pady=5)
 
 def añadir_citas(tabla_citas):
-    # Crear nueva ventana para agregar doctor
+    # Crear nueva ventana para agregar cita
     w_agregar = Toplevel()
     w_agregar.title("Añadir Cita")
-    w_agregar.geometry("300x350")
-    #w_agregar.configure(bg="#133E87")
+    w_agregar.geometry("300x400")
     icono = PhotoImage(file="server-storage.png")
     w_agregar.iconphoto(True, icono)
+
+    # Conectar a la base de datos para obtener los doctores y pacientes disponibles
+    conn = conectar_db()
+    cursor = conn.cursor()
+
+    # Obtener lista de pacientes con su código y nombre
+    cursor.execute("SELECT codigo, nombre FROM paciente")
+    pacientes = cursor.fetchall()  # Esto será una lista de tuplas (codigo, nombre)
+
+    # Obtener lista de doctores con su código y nombre
+    cursor.execute("SELECT codigo, nombre FROM doctor")
+    doctores = cursor.fetchall()  # Esto será una lista de tuplas (codigo, nombre)
+
+    cursor.close()
+    conn.close()
 
     # Campos para ingresar datos
     ttk.Label(w_agregar, text="ID de Cita").pack()
     entry_id_cita = ttk.Entry(w_agregar)
     entry_id_cita.pack()
 
-    ttk.Label(w_agregar, text="Codigo del Paciente").pack()
-    entry_codigo_paciente = ttk.Entry(w_agregar)
-    entry_codigo_paciente.pack()
+    # Combobox para seleccionar el paciente, muestra el nombre pero guarda el código
+    ttk.Label(w_agregar, text="Paciente").pack()
+    combo_codigo_paciente = ttk.Combobox(w_agregar, values=[f"{codigo} - {nombre}" for codigo, nombre in pacientes])
+    combo_codigo_paciente.pack()
 
-    ttk.Label(w_agregar, text="Codigo del Doctor").pack()
-    entry_id_doctor = ttk.Entry(w_agregar)
-    entry_id_doctor.pack()
+    # Combobox para seleccionar el doctor, muestra el nombre pero guarda el código
+    ttk.Label(w_agregar, text="Doctor").pack()
+    combo_codigo_doctor = ttk.Combobox(w_agregar, values=[f"{codigo} - {nombre}" for codigo, nombre in doctores])
+    combo_codigo_doctor.pack()
 
+    # Campo de entrada de texto para la fecha
     ttk.Label(w_agregar, text="Fecha").pack()
     entry_fecha = ttk.Entry(w_agregar)
     entry_fecha.pack()
 
+    # Campo de entrada de texto para la hora
     ttk.Label(w_agregar, text="Hora").pack()
     entry_hora = ttk.Entry(w_agregar)
     entry_hora.pack()
 
     def guardar_cita(tabla_citas):
         codigo_cita = entry_id_cita.get()
-        codigo_paciente = entry_codigo_paciente.get()
-        id_doctor = entry_id_doctor.get()
+
+        # Obtener el código de paciente y doctor de la selección del Combobox
+        codigo_paciente = combo_codigo_paciente.get().split(" - ")[0]  # Obtener el código antes del "-"
+        codigo_doctor = combo_codigo_doctor.get().split(" - ")[0]  # Obtener el código antes del "-"
+
         fecha = entry_fecha.get()
         hora = entry_hora.get()
 
-        # Verificar si la fecha y hora están disponibles para el doctor
+        # Verificar si todos los campos tienen valores
+        if not (codigo_cita and codigo_paciente and codigo_doctor and fecha and hora):
+            messagebox.showerror("Error", "Todos los campos deben ser llenados")
+            return
+
         conn = conectar_db()
         cursor = conn.cursor()
 
-        # Consulta para verificar si el doctor ya tiene una cita a la misma hora
+        # Consulta para verificar si el doctor ya tiene una cita a la misma hora y fecha
         cursor.execute(
             "SELECT * FROM cita WHERE codigo_doctor = %s AND fecha = %s AND hora = %s",
-            (id_doctor, fecha, hora)
+            (codigo_doctor, fecha, hora)
         )
         cita_existente = cursor.fetchone()
 
         if cita_existente:
-            # Si ya existe una cita para el doctor en esa fecha y hora
             messagebox.showerror("Error", "El doctor ya tiene una cita en esa fecha y hora.")
             cursor.close()
             conn.close()
             return  # Salir de la función si hay conflicto
 
-        # Si no existe conflicto, se puede insertar la nueva cita
+        # Insertar la nueva cita en la base de datos
         cursor.execute(
             "INSERT INTO cita (id_cita, codigo_paciente, codigo_doctor, fecha, hora) VALUES (%s, %s, %s, %s, %s)",
-            (codigo_cita, codigo_paciente, id_doctor, fecha, hora)
+            (codigo_cita, codigo_paciente, codigo_doctor, fecha, hora)
         )
         conn.commit()
 
         # Obtener el último registro añadido para mostrarlo en el Treeview
         cursor.execute("SELECT * FROM cita WHERE id_cita = %s", (codigo_cita,))
-        nuevo_cita = cursor.fetchone()
+        nueva_cita = cursor.fetchone()
 
         # Insertar el nuevo registro en el Treeview
-        if nuevo_cita:
-            tabla_citas.insert("", "end", values=nuevo_cita)
+        if nueva_cita:
+            tabla_citas.insert("", "end", values=nueva_cita)
 
         cursor.close()
         conn.close()
@@ -696,6 +740,129 @@ def añadir_citas(tabla_citas):
 
     # Botón para guardar cita
     btn_guardar = Button(w_agregar, text="Guardar", command=lambda: guardar_cita(tabla_citas), bg="#008DDA")
+    btn_guardar.pack(pady=10)
+
+    Button(w_agregar, text="Cerrar", command=w_agregar.destroy, background="#FF004D").pack(pady=5)
+
+#----------------------------------------MEDICAMENTOS-------------------------------------------------------------
+
+def mostrar_medicamentos():
+    conn = conectar_db()
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM medicamento")
+    medicamentos = cursor.fetchall()
+    column_names = [desc[0] for desc in cursor.description]
+    cursor.close()
+    conn.close()
+
+    # Crear una nueva ventana para mostrar los pacientes
+    w_medicamentos = Toplevel()
+    w_medicamentos.title("Medicamentos")
+    w_medicamentos.configure(bg="#257180")
+    Label(w_medicamentos, text="Tabla de Medicamentos", bg="#433878", fg="White").pack(pady=10)
+    icono = PhotoImage(file="server-storage.png")
+    w_medicamentos.iconphoto(True, icono)
+
+    # Crear un Treeview para mostrar los datos
+    tabla_medicamentos = ttk.Treeview(w_medicamentos, columns=column_names, show="headings")
+    tabla_medicamentos.pack(expand=True, fill='both')
+
+    # Configurar las columnas dinámicamente
+    for col in column_names:
+        tabla_medicamentos.heading(col, text=col)
+        tabla_medicamentos.column(col, anchor='center', width=100)
+
+    # Insertar los datos en el Treeview
+    for medicamento in medicamentos:
+        tabla_medicamentos.insert("", "end", values=medicamento)
+
+    # Botón para añadir paciente
+    añadir_btn = Button(w_medicamentos, text="Añadir Medicamento", command=lambda: añadir_medicamento(tabla_medicamentos), bg="#00FF9C")
+    añadir_btn.pack(pady=5)
+
+    # Función para eliminar el paciente seleccionado
+    def eliminar_medicamento():
+        selected_item1 = tabla_medicamentos.selection()
+        if selected_item1:
+            empleado_id1 = tabla_medicamentos.item(selected_item1)['values'][0]
+
+            # Eliminar el paciente de la base de datos
+            conn = conectar_db()
+            cursor = conn.cursor()
+            cursor.execute("DELETE FROM medicamento WHERE codigo = %s", (empleado_id1,))
+            conn.commit()
+            cursor.close()
+            conn.close()
+
+            # Actualizar la tabla después de la eliminación
+            tabla_medicamentos.delete(selected_item1)  # Elimina el registro visualmente
+
+    # Botón para eliminar paciente
+    eliminar_btn = Button(w_medicamentos, text="Eliminar Medicamento", command=eliminar_medicamento, bg="#F9E400")
+    eliminar_btn.pack(pady=5)
+
+    Button(w_medicamentos, text="Cerrar", command=w_medicamentos.destroy, bg="#FF004D").pack(pady=5)
+
+def añadir_medicamento(tabla_medicamentos):
+    # Crear nueva ventana para agregar medicamento
+    w_agregar = Toplevel()
+    w_agregar.title("Añadir Medicamento")
+    w_agregar.geometry("300x400")
+    icono = PhotoImage(file="server-storage.png")
+    w_agregar.iconphoto(True, icono)
+
+    # Campos para ingresar datos
+    ttk.Label(w_agregar, text="Codigo").pack()
+    entry_codigo = ttk.Entry(w_agregar)
+    entry_codigo.pack()
+
+    ttk.Label(w_agregar, text="Nombre del Medicamento").pack()
+    entry_nombre_med = ttk.Entry(w_agregar)
+    entry_nombre_med.pack()
+
+    ttk.Label(w_agregar, text="Via de Administracion").pack()
+    entry_via = ttk.Entry(w_agregar)
+    entry_via.pack()
+
+    ttk.Label(w_agregar, text="Presentacion").pack()
+    entry_pres = ttk.Entry(w_agregar)
+    entry_pres.pack()
+
+    ttk.Label(w_agregar, text="Fecha de Caducidad").pack()
+    entry_fechacad = ttk.Entry(w_agregar)
+    entry_fechacad.pack()
+
+
+    def guardar_medicamento():
+        codigo = entry_codigo.get()
+        nombre = entry_nombre_med.get()
+        via_admin = entry_via.get()
+        presentacion = entry_pres.get()
+        fecha_cad = entry_fechacad.get()
+
+        # Insertar el nuevo medicamento en la base de datos
+        conn = conectar_db()
+        cursor = conn.cursor()
+        cursor.execute(
+            "INSERT INTO medicamento (codigo, nombre, via_adm, presentacion, fecha_cad) VALUES (%s, %s, %s, %s, %s)",
+            (codigo, nombre, via_admin, presentacion, fecha_cad))
+        conn.commit()
+
+        # Obtener el último registro añadido para mostrarlo en el Treeview
+        cursor.execute("SELECT * FROM medicamento WHERE codigo = %s", (codigo,))
+        nuevo_medicamento = cursor.fetchone()
+
+        # Insertar el nuevo registro en el Treeview
+        if nuevo_medicamento:
+            tabla_medicamentos.insert("", "end", values=nuevo_medicamento)
+
+        cursor.close()
+        conn.close()
+
+        w_agregar.destroy()  # Cerrar la ventana de añadir medicamento
+
+    # Botón para guardar medicamento
+    btn_guardar = Button(w_agregar, text="Guardar", command=guardar_medicamento, bg="#008DDA")
     btn_guardar.pack(pady=10)
 
     Button(w_agregar, text="Cerrar", command=w_agregar.destroy, background="#FF004D").pack(pady=5)
@@ -723,8 +890,11 @@ def ventana_principal():
     btn_pacientes = Button(frame_botones, text="Pacientes", command=mostrar_pacientes, background="#2E8A99", fg="White")
     btn_pacientes.pack(side="left", expand=True, fill="x")
 
-    btn_citas = Button(frame_botones, text="Citas",command=mostrar_citas, background="#84A7A1", fg="White")
+    btn_citas = Button(frame_botones, text="Citas", command=mostrar_citas, background="#84A7A1", fg="White")
     btn_citas.pack(side="left", expand=True, fill="x")
+
+    btn_medicamentos = Button(frame_botones, text="Medicamentos", command=mostrar_medicamentos, background="#15B392", fg="White")
+    btn_medicamentos.pack(side="left", expand=True, fill="x")
 
     # Poner la imagen usando pillow
     image = Image.open("database.png")  # Aquí va la ruta de tu imagen
@@ -741,6 +911,76 @@ def ventana_principal():
     btn_cerrar = Button(w2, text="Cerrar", command=lambda: cerrar_ventanas(w2), background="#FF004D")
     btn_cerrar.pack(pady=10)  # Espacio superior para el botón
 
+def mostrar_citas_doctor(codigo_doctor):
+    # Conectar a la base de datos
+    conn = conectar_db()
+    cursor = conn.cursor()
+
+    # Filtrar las citas asignadas al doctor según su código
+    query = """
+            SELECT id_cita, codigo_paciente, fecha, hora
+            FROM cita
+            WHERE codigo_doctor = %s
+            ORDER BY fecha, hora
+        """
+    cursor.execute(query, (codigo_doctor,))
+    citas = cursor.fetchall()
+    column_names = [desc[0] for desc in cursor.description]
+    cursor.close()
+    conn.close()
+
+    # Crear una nueva ventana para mostrar las citas y el calendario
+    w_citas = Toplevel()
+    w_citas.title("Citas")
+    w_citas.configure(bg="#433878")
+    Label(w_citas, text="Tabla de Citas", bg="#433878", fg="White").pack(pady=10)
+    icono = PhotoImage(file="server-storage.png")
+    w_citas.iconphoto(True, icono)
+
+    # Crear un Treeview para mostrar los datos
+    tabla_citas = ttk.Treeview(w_citas, columns=column_names, show="headings")
+    tabla_citas.pack(expand=True, fill='both')
+
+    # Configurar las columnas dinámicamente
+    for col in column_names:
+        tabla_citas.heading(col, text=col)
+        tabla_citas.column(col, anchor='center', width=100)
+
+    # Insertar los datos filtrados en el Treeview
+    for cita in citas:
+        tabla_citas.insert("", "end", values=cita)
+
+    # Crear un widget de calendario
+    calendar_frame = Frame(w_citas)
+    calendar_frame.pack(pady=20)
+
+    # Personalizar el calendario
+    cal = Calendar(calendar_frame,
+                   selectmode="day",
+                   year=2024, month=11,
+                   showweeknumbers=False,  # Oculta los números de semana
+                   locale="es",  # Cambia el idioma a español
+                   date_pattern="dd/mm/yyyy",  # Formato de fecha en español
+                   background="#B1D690",
+                   foreground="black",
+                   selectbackground="blue",
+                   selectforeground="white",
+                   weekendbackground="lightgrey",
+                   weekendforeground="white",
+                   othermonthforeground="grey",
+                   othermonthbackground="white",
+                   bordercolor="grey",
+                   normalbackground="white",
+                   normalforeground="black",
+                   font=("Arial", 12),
+                   headerfont=("Arial", 14, "bold"),
+                   headersbackground="#88C273",
+                   headersforeground="black")
+    cal.pack()
+
+    # Configurar un color para eventos de citas
+    cal.tag_config("cita", background="#008DDA", foreground="black")
+
 def cerrar_ventanas(window):
     window.destroy()  # Cierra la ventana secundaria
     limpiar_campos()
@@ -748,7 +988,7 @@ def cerrar_ventanas(window):
 
 def login():
     user = usuario.get()  # Obtiene el nombre de usuario ingresado
-    password = contra.get()     # Obtiene la contraseña ingresada
+    password = contra.get()  # Obtiene la contraseña ingresada
 
     # Verificar si es administrador
     if user == 'admin' and password == '1234':
@@ -762,29 +1002,46 @@ def login():
 
     try:
         cursor = conexion.cursor()
-        # Consulta para verificar el código y contraseña y obtener el nombre del empleado
-        query = "SELECT nombre FROM empleado WHERE codigo = %s AND contraseña = %s"
-        cursor.execute(query, (user, password))
-        resultado = cursor.fetchone()
 
-        if resultado:
-            nombre_empleado = resultado[0]  # Recupera el nombre del empleado
+        # Verificar si las credenciales pertenecen a un doctor
+        query_doctor = "SELECT codigo, nombre FROM doctor WHERE codigo = %s AND contraseña = %s"
+        cursor.execute(query_doctor, (user, password))
+        resultado_doctor = cursor.fetchone()
+
+        if resultado_doctor:
+            codigo_doctor, nombre_doctor = resultado_doctor  # Recupera el código y nombre del doctor
+            mensaje_bienvenida = f"Hola, Dr. {nombre_doctor.capitalize()}"
+            messagebox.showinfo("Inicio de sesión exitoso", mensaje_bienvenida)
+            ventana_doctores(nombre_doctor, codigo_doctor)  # Abre la ventana de doctores
+            return
+
+        # Verificar si las credenciales pertenecen a un empleado
+        query_empleado = "SELECT codigo, nombre FROM empleado WHERE codigo = %s AND contraseña = %s"
+        cursor.execute(query_empleado, (user, password))
+        resultado_empleado = cursor.fetchone()
+
+        if resultado_empleado:
+            codigo_empleado, nombre_empleado = resultado_empleado  # Recupera el código y nombre del empleado
             mensaje_bienvenida = f"Hola, {nombre_empleado.capitalize()}"
             messagebox.showinfo("Inicio de sesión exitoso", mensaje_bienvenida)
-            ventana_empleados(nombre_empleado)  # Pasa el nombre a la ventana de empleados
-        else:
-            messagebox.showerror("Error", "Código o contraseña inválidos...")
+            ventana_empleados(nombre_empleado)  # Abre la ventana de empleados
+            return
 
-        cursor.close()
+        # Si no se encuentra ninguna coincidencia
+        messagebox.showerror("Error", "Código o contraseña inválidos...")
+
     except Exception as e:
         messagebox.showerror("Error de consulta", f"Ocurrió un error al verificar las credenciales: {e}")
+
     finally:
+        cursor.close()
         conexion.close()
 
 
 
+
+#-----------------------------------VENTANA DE EMPLEADOS--------------------------------------------
 def ventana_empleados(nombre_empleado):
-    user = usuario.get()
     w.withdraw()
     w2 = Toplevel()  # Toplevel para crear una nueva ventana
     w2.geometry("500x400")
@@ -821,9 +1078,51 @@ def ventana_empleados(nombre_empleado):
     btn_cerrar = Button(w2, text="Cerrar", command=lambda: cerrar_ventanas(w2), background="#FF004D")
     btn_cerrar.pack(pady=10)  # Espacio superior para el botón
 
+#--------------------VENTANA DE DOCTORES---------------------------------
+
+def ventana_doctores(nombre_doctor, codigo_doctor):
+    w.withdraw()
+    w2 = Toplevel()  # Toplevel para crear una nueva ventana
+    w2.geometry("500x400")
+    w2.title("Doctores")
+    icono = PhotoImage(file="server-storage.png")
+    w2.iconphoto(True, icono)
+    w2.configure(background="#1D2D50")
+
+    # Saludo al doctor
+    Label(w2, text=f"Hola Dr. {nombre_doctor}!", bg="#1D2D50", font=("Arial", 12), fg="White", anchor='w').pack(fill='x')
+
+    # Frame superior para los botones
+    frame_botones = Frame(w2)
+    frame_botones.pack(side="top", fill="x")  # Llenar horizontalmente
+
+    # Crear botones
+    btn_citas = Button(frame_botones, text="Citas", command=lambda: mostrar_citas_doctor(codigo_doctor),
+                       background="#590995", fg="White")
+    btn_citas.pack(side="left", expand=True, fill="x")
+
+    btn_medicamentos = Button(frame_botones, text="Medicamentos", command=mostrar_medicamentos,
+                              background="#117554", fg="White")
+    btn_medicamentos.pack(side="left", expand=True, fill="x")
+
+    # Poner la imagen usando Pillow
+    image = Image.open("caduceus.png")  # Aquí va la ruta de tu imagen
+    image = image.resize((200, 200), Image.LANCZOS)  # Cambiar el tamaño de la imagen
+    image_tk = ImageTk.PhotoImage(image)
+
+    # Crear etiqueta para la imagen y centrarla
+    label_imagen = Label(w2, image=image_tk, background="#1D2D50")
+    label_imagen.pack(pady=20)  # Espacio superior para la imagen
+
+    label_imagen.image = image_tk  # Para no borrar la imagen de la memoria
+
+    # Botón de cerrar fuera del frame de botones
+    btn_cerrar = Button(w2, text="Cerrar", command=lambda: cerrar_ventanas(w2), background="#FF004D")
+    btn_cerrar.pack(pady=10)  # Espacio superior para el botón
 
 
-# ------------------------VENTANA PRINCIPAL-----------------------------
+
+# ------------------------VENTANA DE LOGIN-----------------------------
 w = Tk()
 w.geometry("400x400")
 w.title("Iniciar sesión")
